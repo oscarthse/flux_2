@@ -1,0 +1,24 @@
+{
+  "name": "todo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:api": "cd apps/api && uv run pytest",
+    "test:web": "cd apps/web && pnpm test",
+    "lint": "turbo run lint",
+    "lint:api": "cd apps/api && uv run ruff check .",
+    "format:api": "cd apps/api && uv run black .",
+    "dev:web": "cd apps/web && pnpm dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.1",
+  "devDependencies": {
+    "turbo": "^2.7.1"
+  }
+}

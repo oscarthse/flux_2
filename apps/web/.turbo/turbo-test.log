@@ -1,0 +1,36 @@
+
+
+> web@0.1.0 test /Users/oscarthieleserrano/code/personal_projects/todo/apps/web
+> vitest run
+
+[?25l
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90m/Users/oscarthieleserrano/code/personal_projects/todo/apps/web[39m
+
+[?2026h
+[1m[33m ❯ [39m[22msrc/features/data-health/DataHealthDashboard.test.tsx[2m [queued][22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (0)[39m
+[2m   Start at [22m19:35:46
+[2m   Duration [22m215ms
+[?2026l[?2026h[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K
+
+[1m[33m ❯ [39m[22msrc/features/data-health/DataHealthDashboard.test.tsx[2m 0/4[22m
+
+[2m Test Files [22m[1m[32m0 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m[1m[32m0 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m19:35:46
+[2m   Duration [22m823ms
+[?2026l[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K [32m✓[39m src/features/data-health/DataHealthDashboard.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 89[2mms[22m[39m
+   [32m✓[39m DataHealthDashboard [2m(4)[22m
+     [32m✓[39m shows loading state when isLoading is true[32m 10[2mms[22m[39m
+     [32m✓[39m shows empty state when data is null[32m 3[2mms[22m[39m
+     [32m✓[39m renders dashboard with data[32m 64[2mms[22m[39m
+     [32m✓[39m calls onRefresh when refresh button is clicked[32m 11[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 19:35:46
+[2m   Duration [22m 960ms[2m (transform 78ms, setup 100ms, import 532ms, tests 89ms, environment 154ms)[22m
+
+[?25h
