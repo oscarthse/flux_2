@@ -24,6 +24,22 @@ from src.schemas.auth import (
     TokenRefresh,
     UserResponse,
 )
+from src.models.restaurant import Restaurant
+from pydantic import BaseModel
+
+
+class RestaurantCreate(BaseModel):
+    name: str
+    timezone: str = "UTC"
+
+
+class RestaurantResponse(BaseModel):
+    id: str
+    name: str
+    timezone: str
+
+    class Config:
+        from_attributes = True
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -159,3 +175,60 @@ def get_me(current_user: User = Depends(get_current_user)) -> User:
     Get the current authenticated user's profile.
     """
     return current_user
+
+
+@router.post("/restaurant", response_model=RestaurantResponse, status_code=status.HTTP_201_CREATED)
+def create_restaurant(
+    restaurant_data: RestaurantCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Create a restaurant for the current user.
+    Each user can only have one restaurant.
+    """
+    # Check if user already has a restaurant
+    existing = db.query(Restaurant).filter(Restaurant.owner_id == current_user.id).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already have a restaurant",
+        )
+
+    # Create new restaurant
+    new_restaurant = Restaurant(
+        name=restaurant_data.name,
+        timezone=restaurant_data.timezone,
+        owner_id=current_user.id,
+    )
+    db.add(new_restaurant)
+    db.commit()
+    db.refresh(new_restaurant)
+
+    return RestaurantResponse(
+        id=str(new_restaurant.id),
+        name=new_restaurant.name,
+        timezone=new_restaurant.timezone,
+    )
+
+
+@router.get("/restaurant", response_model=RestaurantResponse)
+def get_my_restaurant(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the current user's restaurant.
+    """
+    restaurant = db.query(Restaurant).filter(Restaurant.owner_id == current_user.id).first()
+    if not restaurant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No restaurant found. Create one first.",
+        )
+
+    return RestaurantResponse(
+        id=str(restaurant.id),
+        name=restaurant.name,
+        timezone=restaurant.timezone,
+    )

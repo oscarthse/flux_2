@@ -56,8 +56,7 @@ export function MenuPhotoUpload({ onItemsExtracted }: MenuPhotoUploadProps) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-
-      const response = await fetch('/api/recipes/menu/upload-photo', {
+      const response = await fetch('http://localhost:8000/api/recipes/menu/upload-photo', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,

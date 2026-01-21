@@ -15,7 +15,7 @@ from src.models.ingestion_log import IngestionLog
 from src.models.transaction import Transaction, TransactionItem
 from src.services.csv_parser import ParsedRow, ParseResult
 from src.services.menu_extraction import MenuItemExtractionService
-from src.core.business_day import get_business_date
+from src.core.business_day import get_business_date, BUSINESS_DAY_START_HOUR
 
 
 class IngestionResult:
@@ -264,7 +264,7 @@ class TransactionIngestionService:
                 # 04:00 is 0, 05:00 is 60... 02:00 (next day) is 22*60
                 def get_offset_minutes(t):
                     minutes = t.hour * 60 + t.minute
-                    if t.hour < DAY_START_HOUR:
+                    if t.hour < BUSINESS_DAY_START_HOUR:
                         minutes += 24 * 60
                     return minutes
 

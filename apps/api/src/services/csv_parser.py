@@ -381,6 +381,7 @@ class CSVParser:
         qty_col = self.find_column(headers, mapping.quantity)
         price_col = self.find_column(headers, mapping.unit_price)
         total_col = self.find_column(headers, mapping.total)
+        discount_col = self.find_column(headers, mapping.discount)  # Optional
 
         # Validate required columns found
         missing_columns = []

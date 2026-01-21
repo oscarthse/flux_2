@@ -53,7 +53,41 @@ async function request<T>(
     return { error: 'Network error' };
   }
 }
+// CSV Preview types
+export interface CSVPreviewRow {
+  row_number: number;
+  date: string;
+  item_name: string;
+  raw_item_name: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  warnings: string[];
+}
 
+export interface CSVPreviewError {
+  row_number: number | null;
+  field: string;
+  message: string;
+  raw_value: string | null;
+}
+
+export interface CSVPreviewResponse {
+  vendor: string;
+  encoding: string;
+  total_rows: number;
+  parsed_rows: CSVPreviewRow[];
+  errors: CSVPreviewError[];
+  warnings: string[];
+  success_rate: number;
+  schema_detected: boolean;
+}
+
+export interface UploadResponse {
+  upload_id: string;
+  status: string;
+  message: string;
+}
 // Auth endpoints
 export interface LoginRequest {
   email: string;
@@ -96,6 +130,60 @@ export const api = {
   data: {
     uploads: () => request<{ uploads: any[] }>('/api/data/uploads'),
     health: () => request<DataHealthScore>('/api/data/health'),
+    
+    // Preview CSV before upload (shows first 10 rows, detects format)
+    previewCSV: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('access_token');
+      try {
+        const response = await fetch(`${API_URL}/api/data/preview-csv`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          return { data: null, error: errorData.detail || 'Failed to preview CSV' };
+        }
+        
+        const data = await response.json();
+        return { data, error: null };
+      } catch (err: any) {
+        return { data: null, error: err.message || 'Network error' };
+      }
+    },
+    
+    // Upload CSV file for processing
+    uploadCSV: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('access_token');
+      try {
+        const response = await fetch(`${API_URL}/api/data/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          return { data: null, error: errorData.detail || 'Failed to upload CSV' };
+        }
+        
+        const data = await response.json();
+        return { data, error: null };
+      } catch (err: any) {
+        return { data: null, error: err.message || 'Network error' };
+      }
+    },
   },
 
   settings: {

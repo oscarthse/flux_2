@@ -777,6 +777,12 @@ class MenuExtractionResponse(BaseModel):
     message: str
 
 
+@router.get("/menu/test")
+def test_menu_route():
+    """Simple test endpoint to verify routing."""
+    return {"status": "ok", "message": "Menu route works!"}
+
+
 @router.post("/menu/upload-photo", response_model=MenuExtractionResponse)
 async def upload_menu_photo(
     file: UploadFile = File(...),
@@ -844,9 +850,12 @@ async def upload_menu_photo(
             menu_item = MenuItem(
                 restaurant_id=restaurant.id,
                 name=item.name,
-                category=item.category or "Uncategorized",
+                category_path=item.category or "Uncategorized",
+                description=item.description,
                 price=Decimal(str(item.price)) if item.price else Decimal("0"),
-                is_active=True
+                is_active=True,
+                auto_created=True,
+                confidence_score=Decimal(str(item.confidence)) if item.confidence else None
             )
             db.add(menu_item)
             created_count += 1

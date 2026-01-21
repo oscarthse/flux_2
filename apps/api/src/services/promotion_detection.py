@@ -290,6 +290,115 @@ class PromotionDetectionService:
 
         return periods
 
+    def detect_promotions_from_flagged_transactions(
+        self,
+        restaurant_id: UUID
+    ) -> int:
+        """
+        Create promotions from transactions already flagged with is_promo=True.
+        
+        Groups consecutive promo days for each menu item into promotion periods.
+        
+        Returns:
+            Number of promotions created
+        """
+        from datetime import datetime
+        
+        # Find all promo transactions grouped by item and date
+        stmt = (
+            select(
+                TransactionItem.menu_item_name,
+                Transaction.transaction_date,
+                func.avg(TransactionItem.unit_price).label('avg_price'),
+                func.sum(Transaction.discount_amount).label('total_discount')
+            )
+            .join(Transaction, TransactionItem.transaction_id == Transaction.id)
+            .where(
+                Transaction.restaurant_id == restaurant_id,
+                Transaction.is_promo == True
+            )
+            .group_by(TransactionItem.menu_item_name, Transaction.transaction_date)
+            .order_by(TransactionItem.menu_item_name, Transaction.transaction_date)
+        )
+        
+        results = self.db.execute(stmt).all()
+        
+        if not results:
+            return 0
+        
+        # Group by item name and find consecutive date ranges
+        promotions_created = 0
+        current_item = None
+        period_start = None
+        period_end = None
+        
+        def save_promotion(item_name: str, start: date, end: date):
+            nonlocal promotions_created
+            
+            # Find menu item
+            menu_item = self.db.query(MenuItem).filter(
+                MenuItem.restaurant_id == restaurant_id,
+                MenuItem.name == item_name
+            ).first()
+            
+            if not menu_item:
+                return
+            
+            # Check for existing
+            existing = self.db.query(Promotion).filter(
+                Promotion.restaurant_id == restaurant_id,
+                Promotion.menu_item_id == menu_item.id,
+                Promotion.start_date == datetime.combine(start, datetime.min.time()),
+                Promotion.end_date == datetime.combine(end, datetime.min.time())
+            ).first()
+            
+            if existing:
+                return
+            
+            new_promo = Promotion(
+                restaurant_id=restaurant_id,
+                menu_item_id=menu_item.id,
+                name=f"{item_name} - Detected Promotion",
+                discount_type='percentage',
+                discount_value=Decimal("10.00"),  # Default estimate
+                start_date=datetime.combine(start, datetime.min.time()),
+                end_date=datetime.combine(end, datetime.min.time()),
+                status='completed',
+                trigger_reason='inferred',
+                is_exploration=False
+            )
+            self.db.add(new_promo)
+            promotions_created += 1
+        
+        for row in results:
+            if current_item != row.menu_item_name:
+                # New item - save previous promotion if exists
+                if current_item and period_start:
+                    save_promotion(current_item, period_start, period_end)
+                
+                current_item = row.menu_item_name
+                period_start = row.transaction_date
+                period_end = row.transaction_date
+            else:
+                # Same item - check if consecutive
+                if (row.transaction_date - period_end).days <= 2:
+                    # Extend period (allow 1-day gaps for weekends)
+                    period_end = row.transaction_date
+                else:
+                    # Gap too large - save and start new period
+                    save_promotion(current_item, period_start, period_end)
+                    period_start = row.transaction_date
+                    period_end = row.transaction_date
+        
+        # Save last promotion
+        if current_item and period_start:
+            save_promotion(current_item, period_start, period_end)
+        
+        if promotions_created > 0:
+            self.db.commit()
+        
+        return promotions_created
+
     def detect_and_save_promotions(
         self,
         restaurant_id: UUID,
@@ -297,6 +406,10 @@ class PromotionDetectionService:
     ) -> int:
         """
         Run promotion inference on all menu items and save to database.
+        
+        Uses multiple detection methods:
+        1. Flagged transactions (from CSV discount column/keywords)
+        2. Statistical price variance analysis (needs 30+ days)
 
         Args:
             restaurant_id: Restaurant UUID
@@ -305,12 +418,16 @@ class PromotionDetectionService:
         Returns:
             Number of promotions created
         """
+        promotions_created = 0
+        
+        # Method 1: Detect from flagged transactions (works with any amount of data)
+        promotions_created += self.detect_promotions_from_flagged_transactions(restaurant_id)
+        
+        # Method 2: Statistical inference (needs 30+ days of data)
         # Get all menu items for restaurant
         menu_items = self.db.query(MenuItem).filter(
             MenuItem.restaurant_id == restaurant_id
         ).all()
-
-        promotions_created = 0
 
         for menu_item in menu_items:
             # Infer promotions for this item
